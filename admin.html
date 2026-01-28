@@ -1,42 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Tracker</title>
+  <meta charset="UTF-8" />
+  <title>Admin – Visitor Log</title>
+  <style>
+    body{font-family:Arial;background:#020617;color:#e5e7eb;padding:20px}
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #334155;padding:6px;font-size:12px}
+    th{background:#1e293b}
+    tr:nth-child(even){background:#0f172a}
+  </style>
 </head>
 <body>
 <h2>Visitor Log</h2>
-<table border="1" cellpadding="5">
+<table>
   <thead>
     <tr>
       <th>Waktu</th>
-      <th>Latitude</th>
-      <th>Longitude</th>
+      <th>Device</th>
+      <th>OS</th>
+      <th>Browser</th>
+      <th>Screen</th>
+      <th>Language</th>
+      <th>Timezone</th>
+      <th>RAM</th>
+      <th>CPU</th>
+      <th>Touch</th>
+      <th>Lat</th>
+      <th>Lon</th>
       <th>User Agent</th>
     </tr>
   </thead>
-  <tbody id="data"></tbody>
+  <tbody id="rows"></tbody>
 </table>
 
 <script>
 const BIN_ID = "697a176243b1c97be951fd5e";
 const API_KEY = "$2a$10$r5pGtKgRgyO6VHpMsSAt4ega8gS3cE2GxRVjHaa5r0zEm0CPEOh7e";
 
+
+
 fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
   headers: { "X-Master-Key": API_KEY }
 })
-.then(res => res.json())
+.then(r => r.json())
 .then(json => {
-  const rows = json.record.visitors.map(v => `
+  const visitors = json.record.visitors || [];
+  const html = visitors.map(v => `
     <tr>
-      <td>${v.time}</td>
-      <td>${v.lat ?? "-"}</td>
-      <td>${v.lon ?? "-"}</td>
-      <td>${v.userAgent}</td>
+      <td>${v.time || ""}</td>
+      <td>${v.deviceType || ""}</td>
+      <td>${v.os || ""}</td>
+      <td>${v.browser || ""}</td>
+      <td>${v.screen || ""}</td>
+      <td>${v.language || ""}</td>
+      <td>${v.timezone || ""}</td>
+      <td>${v.ramGB || ""}</td>
+      <td>${v.cpuCore || ""}</td>
+      <td>${v.touchSupport ? "Yes" : "No"}</td>
+      <td>${v.latitude ?? "-"}</td>
+      <td>${v.longitude ?? "-"}</td>
+      <td style="max-width:240px;word-break:break-all">${v.userAgent || ""}</td>
     </tr>
   `).join("");
-
-  document.getElementById("data").innerHTML = rows;
+  document.getElementById("rows").innerHTML = html;
 });
 </script>
 </body>
