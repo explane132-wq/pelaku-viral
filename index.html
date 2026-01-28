@@ -1,47 +1,94 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Visitor Page</title>
+  <meta charset="UTF-8" />
+  <title>Device Info Collector</title>
+  <style>
+    body{font-family:Arial;background:#0f172a;color:#e5e7eb;display:flex;justify-content:center;align-items:center;height:100vh}
+    .box{background:#1e293b;padding:24px;border-radius:12px;max-width:520px;width:100%}
+    button{padding:10px 16px;border:0;border-radius:8px;background:#38bdf8;color:#000;cursor:pointer}
+    pre{background:#020617;padding:12px;border-radius:8px;overflow:auto;margin-top:12px}
+  </style>
 </head>
 <body>
-  <h2>Welcome</h2>
-  <p>Data akan dicatat untuk keperluan analitik.</p>
-  <button onclick="track()">Izinkan & Lanjut</button>
+<div class="box">
+  <h2>Device Info (Edukasi)</h2>
+  <p>Klik tombol untuk ambil info device. Lokasi butuh izin browser.</p>
+  <button onclick="collect()">Ambil & Simpan</button>
+  <pre id="out"></pre>
+</div>
 
 <script>
 const BIN_ID = "697a176243b1c97be951fd5e";
 const API_KEY = "$2a$10$r5pGtKgRgyO6VHpMsSAt4ega8gS3cE2GxRVjHaa5r0zEm0CPEOh7e";
 
-function track() {
-  if (!navigator.geolocation) {
-    sendData(null, null);
-    return;
-  }
 
-  navigator.geolocation.getCurrentPosition(
-    pos => sendData(pos.coords.latitude, pos.coords.longitude),
-    err => sendData(null, null)
-  );
+function detectDevice(ua){
+  ua = ua.toLowerCase();
+  if (/android|iphone|ipad|ipod/.test(ua)) return "Mobile/Tablet";
+  return "Desktop/Laptop";
+}
+function parseOS(ua){
+  if (/windows nt/.test(ua)) return "Windows";
+  if (/android/.test(ua)) return "Android";
+  if (/iphone|ipad|ipod/.test(ua)) return "iOS";
+  if (/mac os x/.test(ua)) return "macOS";
+  if (/linux/.test(ua)) return "Linux";
+  return "Unknown";
+}
+function parseBrowser(ua){
+  if (/edg\//.test(ua)) return "Edge";
+  if (/chrome\//.test(ua)) return "Chrome";
+  if (/firefox\//.test(ua)) return "Firefox";
+  if (/safari\//.test(ua)) return "Safari";
+  return "Unknown";
 }
 
-function sendData(lat, lon) {
-  const data = {
+function collect(){
+  const ua = navigator.userAgent;
+  const info = {
     time: new Date().toISOString(),
-    lat: lat,
-    lon: lon,
-    userAgent: navigator.userAgent
+    deviceType: detectDevice(ua),
+    os: parseOS(ua),
+    browser: parseBrowser(ua),
+    userAgent: ua,
+    screen: `${screen.width}x${screen.height}`,
+    pixelRatio: window.devicePixelRatio || 1,
+    language: navigator.language,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    online: navigator.onLine,
+    ramGB: navigator.deviceMemory || "N/A",
+    cpuCore: navigator.hardwareConcurrency || "N/A",
+    touchSupport: ('ontouchstart' in window),
+    latitude: null,
+    longitude: null
   };
 
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        info.latitude = pos.coords.latitude;
+        info.longitude = pos.coords.longitude;
+        save(info);
+      },
+      err => save(info)
+    );
+  } else {
+    save(info);
+  }
+}
+
+function save(data){
+  // Ambil bin dulu
   fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-    method: "GET",
     headers: { "X-Master-Key": API_KEY }
   })
-  .then(res => res.json())
+  .then(r => r.json())
   .then(json => {
-    const visitors = json.record.visitors;
+    const visitors = json.record.visitors || [];
     visitors.push(data);
 
+    // Simpan balik
     return fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
       method: "PUT",
       headers: {
@@ -51,8 +98,13 @@ function sendData(lat, lon) {
       body: JSON.stringify({ visitors })
     });
   })
-  .then(() => alert("Data tercatat"))
-  .catch(err => console.error(err));
+  .then(() => {
+    document.getElementById("out").textContent =
+      "Data tersimpan:\n" + JSON.stringify(data, null, 2);
+  })
+  .catch(err => {
+    document.getElementById("out").textContent = "Error: " + err;
+  });
 }
 </script>
 </body>
