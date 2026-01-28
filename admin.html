@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Tracker</title>
+</head>
+<body>
+<h2>Visitor Log</h2>
+<table border="1" cellpadding="5">
+  <thead>
+    <tr>
+      <th>Waktu</th>
+      <th>Latitude</th>
+      <th>Longitude</th>
+      <th>User Agent</th>
+    </tr>
+  </thead>
+  <tbody id="data"></tbody>
+</table>
+
+<script>
+const BIN_ID = "ISI_BIN_ID_KAMU";
+const API_KEY = "ISI_API_KEY_KAMU";
+
+fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+  headers: { "X-Master-Key": API_KEY }
+})
+.then(res => res.json())
+.then(json => {
+  const rows = json.record.visitors.map(v => `
+    <tr>
+      <td>${v.time}</td>
+      <td>${v.lat ?? "-"}</td>
+      <td>${v.lon ?? "-"}</td>
+      <td>${v.userAgent}</td>
+    </tr>
+  `).join("");
+
+  document.getElementById("data").innerHTML = rows;
+});
+</script>
+</body>
+</html>

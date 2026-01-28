@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Visitor Page</title>
+</head>
+<body>
+  <h2>Welcome</h2>
+  <p>Data akan dicatat untuk keperluan analitik.</p>
+  <button onclick="track()">Izinkan & Lanjut</button>
+
+<script>
+const BIN_ID = "ISI_BIN_ID_KAMU";
+const API_KEY = "ISI_API_KEY_KAMU";
+
+function track() {
+  if (!navigator.geolocation) {
+    sendData(null, null);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => sendData(pos.coords.latitude, pos.coords.longitude),
+    err => sendData(null, null)
+  );
+}
+
+function sendData(lat, lon) {
+  const data = {
+    time: new Date().toISOString(),
+    lat: lat,
+    lon: lon,
+    userAgent: navigator.userAgent
+  };
+
+  fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+    method: "GET",
+    headers: { "X-Master-Key": API_KEY }
+  })
+  .then(res => res.json())
+  .then(json => {
+    const visitors = json.record.visitors;
+    visitors.push(data);
+
+    return fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Master-Key": API_KEY
+      },
+      body: JSON.stringify({ visitors })
+    });
+  })
+  .then(() => alert("Data tercatat"))
+  .catch(err => console.error(err));
+}
+</script>
+</body>
+</html>
